@@ -34,15 +34,12 @@
 ## 📁 폴더 및 파일 구조 (project 루트 기준)
 
 project/
-├── data/                                  # 수집된 실제 데이터를 저장하는 폴더
-│   ├── players_2024.csv                   # 타자 능력치
-│   ├── schedule_2024.csv                  # 2024 시즌 전체 일정
-│   ├── batter_vs_pitcher_2024.csv         # 타자 vs 투수 전적
-│   ├── pitcher_vs_batter_2024.csv         # 투수 vs 타자 전적
-│   ├── team_vs_team_2024.csv              # 팀 간 전적 기록
-│   └── manager_profiles.json              # 2024년 감독 성향 정보
+├── data/                                 
+│   ├── players_2024.csv                   
+│   ├── players__P_2024.csv                
+│   ├── schedule_2024.csv                  
+│   └── manager_profiles.json              
 │
-├── kbo_2024_data_crawler.py               # 전체 데이터를 자동 크롤링하는 스크립트
 ├── main_game.py                           # 전체 게임 루프 메인 (시즌 진행 및 경기 호출)
 ├── lineup_assistant.py                    # 라인업 추천 및 분석 기능 (상대 분석 포함)
 ├── llm_prompt_handler.py                  # EEVE 프롬프트 구성 및 응답 처리
@@ -52,11 +49,9 @@ project/
 
 | 단계 | 작업 항목 | 설명 | 시간 |
 |------|-----------|------|------------|
-| 📁 데이터 수집 | 선수 기록 수집 | `players_2024.csv` 자동 크롤링 |  4월 21일 월요일 |
+| 📁 데이터 수집 | 타자 기록 수집 | `players_2024.csv` 자동 크롤링 |  4월 21일 월요일 |
+| 📁 데이터 수집 | 투수 기록 수집 | `players_p_2024.csv` 자동 크롤링 |  4월 21일 월요일 |
 | 📁 데이터 수집 | 시즌 일정 수집 | `schedule_2024.csv` 실제 일정 크롤링 | 4월 21일 월요일 |
-| 📁 데이터 수집 | 타자 vs 투수 전적 | `batter_vs_pitcher_2024.csv` | 4월 21일 월요일 |
-| 📁 데이터 수집 | 투수 vs 타자 전적 | `pitcher_vs_batter_2024.csv` |  4월 21일 월요일 |
-| 📁 데이터 수집 | 팀 간 전적 수집 | `team_vs_team_2024.csv` |4월 21일 월요일|
 | 📁 데이터 수집 | 감독 성향 구성 | `manager_profiles.json` (2024 기준 사실 기반) | 4월 21일 월요일 |
 | ⚙️ 시스템 | 시즌 루프 처리 | 144경기 순차 진행 및 상태 저장 |  4월 22일 화요일 |
 | 🧠 경기 엔진 | 상황 발생 감지 + 작전 선택 | 타이밍별 작전 UI 및 확률 모델링 |  4월 22일 화요일 |

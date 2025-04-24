@@ -1,0 +1,87 @@
+-- 1. 내가 선택한 팀
+CREATE TABLE user_team (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    manager_id VARCHAR(50) NOT NULL UNIQUE,
+    team_name VARCHAR(50) NOT NULL,
+    selected_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- 2-a. 우리 팀 타자들의 가상 기록 저장
+CREATE TABLE virtual_hitters (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    player_name VARCHAR(50) NOT NULL,
+    team VARCHAR(50) NOT NULL,
+    games_played INT DEFAULT 0,
+    at_bats INT DEFAULT 0,
+    hits INT DEFAULT 0,
+    rbi INT DEFAULT 0,
+    homeruns INT DEFAULT 0,
+    runs INT DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 2-b. 우리 팀 투수들의 가상 기록 저장
+CREATE TABLE virtual_pitchers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    player_name VARCHAR(50) NOT NULL,
+    team VARCHAR(50) NOT NULL,
+    games_played INT DEFAULT 0,
+    innings FLOAT DEFAULT 0.0,
+    earned_runs INT DEFAULT 0,
+    strikeouts INT DEFAULT 0,
+    walks INT DEFAULT 0,
+    wins INT DEFAULT 0,
+    losses INT DEFAULT 0,
+    saves INT DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 3. 경기별 결과 기록
+CREATE TABLE virtual_results (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    game_date DATE NOT NULL,
+    my_team VARCHAR(50) NOT NULL,
+    opponent_team VARCHAR(50) NOT NULL,
+    my_score INT DEFAULT 0,
+    opponent_score INT DEFAULT 0,
+    result ENUM('WIN', 'LOSE', 'DRAW') NOT NULL,
+    saved_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 4. 시즌 중 리그 순위 기록
+CREATE TABLE virtual_rankings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    team_name VARCHAR(50) NOT NULL UNIQUE,
+    games INT DEFAULT 0,
+    wins INT DEFAULT 0,
+    losses INT DEFAULT 0,
+    draws INT DEFAULT 0,
+    win_rate FLOAT DEFAULT 0.0,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- ⏳ 4-b. KBO 10개 팀 기본 등록
+INSERT INTO virtual_rankings (team_name)
+VALUES 
+('LG'), ('KT'), ('SSG'), ('NC'), ('두산'),
+('KIA'), ('삼성'), ('롯데'), ('키움'), ('한화');
+
+-- 5. 찬스 상황 판단 + 피드백 저장
+CREATE TABLE decision_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    game_date DATE NOT NULL,
+    inning VARCHAR(10),
+    outs VARCHAR(10),
+    runners VARCHAR(20),
+    batter VARCHAR(50),
+    pitcher VARCHAR(50),
+    llm_prompt TEXT,
+    user_decision VARCHAR(50),
+    llm_response TEXT,
+    result VARCHAR(50),
+    saved_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
