@@ -2,6 +2,7 @@ import pandas as pd
 import pymysql
 import json
 import re
+from ollama import chat
 import random
 from json import JSONDecodeError
 from dotenv import load_dotenv
@@ -66,7 +67,7 @@ def is_chance_eligible(context):
     return True
 
 
-def ask_pa_result(context):
+def ask_pa_result(context, sc, hit_streak):
     """
     context를 바탕으로 LLM에게 매번 독립 샘플링하고
     같은 결과가 연속되지 않도록 지시하여 PA 결과를 결정합니다.
@@ -90,8 +91,10 @@ def ask_pa_result(context):
     else:
         weights = [0.18]*4 + [0.02]*5
         
-    if inning*3 <= total_score + inning*2:
-         weights = [0.18]*4 + [0.0]*5
+    if 4 < sc:
+        weights = [0.18]*4 + [0.0]*5
+    elif hit_streak>4:
+        weights = [0.18]*4 + [0.0]*5
     system_prompt = f"""
 너는 KBO 시뮬레이터 전용 LLM이다. 아래 규칙을 **엄격히** 지켜라.
 
@@ -126,32 +129,64 @@ def ask_pa_result(context):
             {"role": "user",   "content": user_content}
         ]
     )
-    return res.choices[0].message.content.strip()
+    return res.choices[0].message.content.strip(), hit_streak
 
 
 
 def chance_result(context):
-    """
-    사용자가 내린 판단 정보를 바탕으로 최종 PA 결과를 생성합니다.
-    """
-    system_prompt = (
+
+    base_outcomes = [
+        'strikeout', 'groundout', 'flyout', 'pop out',
+        'single', 'double', 'triple', 'home run', 'base on balls'
+    ]
+    
+    system_prompt = """
+        1. 가능한 출력값(반드시 1개만):
+        - {base_outcomes}
+        
+        2. 출력 형식:
+        - 첫 줄에 영어 결과 하나만 {base_outcomes} 목록 중 하나만
+         예시
+        - 'single'
+        - 'strikeout'
+        - 'groundout'
+        - 'flyout'
+        -  'pop out'
+        - 'double'
+        - 'triple'
+        - 'home run'
+        - 'base on balls'
+        무조건 이 9개의 형식으로만 답을 해야돼 
+        어떤 한국 말을 하든 결과는 무조건 영어로 해줘야돼 위의 9개 내에서
+
+        
+        3. 결과
+        - 결과는 감독의 지시를 수행하는거야 감독의 지시를 수행했을때 어떤 결과가 나올지 예측하는거지 너 마음대로 이러한 선수니까 이런 타격을 이런 결과가 나올거다 라고 생각하는게 아니라 
+        - 반드시 위의 예시 처럼 처음에 결과를 보내줘야돼 반드시, 결과는 한여야만 하고 
+        - 감독이 요청한 대로만 판단(player) 답을 주면 안돼 선수의 전력 비교와 비교를 통해 갑독이 요청한 행동을 했을때 데이터 기반 어떤 결과가 나올지를 답해주는거야 
+        - homerun(홈런)은 너무 자주 나오면 안돼 5번중 1번의 확률로 나오면 좋겠어
+        4. 너에 대한 인식
         "너는 야구를 아주 잘 알고 있는 시뮬레이션 LLM이야. "
         "context 안의 선수 스탯과 user 판단(player) 정보를 바탕으로 "
         "결과를 'strikeout','groundout','flyout','pop out',"
         "'single','double','triple','home run','base on balls' 중 "
-        "하나만 정확히 반환해."
-        "유저가 원라는 답만 전달해줘서는 안돼 그 상황과 그선수의 실제 스텟을 비교해서 결과를 반영해줘"
-    )
+        "하나만 정확히 반환해. "
+        "유저가 원하는 답만 전달해줘서는 안 돼. "
+        "그 상황과 그 선수의 실제 스텟을 비교해서 결과를 반영해줘."
+"""
     user_content = json.dumps(context, ensure_ascii=False, default=str)
-    res = client.chat.completions.create(
-        model="gpt-4o-mini",
+    
+
+    response = chat(
+        model="EEVE-Korean-10.8B",
         messages=[
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_content}
-        ]
+            {"role": "user",   "content": user_content}
+        ],
+        stream=False 
     )
-    return res.choices[0].message.content.strip()
 
+    return response["message"]["content"].strip()
 
 def get_match_result_only(t1, t2, stad):
     """

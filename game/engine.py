@@ -18,7 +18,7 @@ STADIUMS = [
     'Suwon','Daejeon','Daegu','Gwangju','Busan Sajik','Changwon'
 ]
 
-def process_pa_result(pa_result: str, runners: list):
+def process_pa_result(pa_result: str, runners: list, hit_streak: str):
     # 0) 따옴표·공백 제거, 소문자화
     pa = pa_result.strip().strip("'\"").lower()
     runs = 0
@@ -26,9 +26,9 @@ def process_pa_result(pa_result: str, runners: list):
     a = -1
     
     if pa == 'chance':
-        return out, runners , 100
+        return out, runners , 100, hit_streak
 
-    # 1) 아웃 상황 (완전 일치)
+    # 1) 아웃 상황 
     if pa in ('strikeout', 'groundout', 'flyout', 'pop out'):
         if pa == 'strikeout':
             print("삼진 아웃")
@@ -39,36 +39,53 @@ def process_pa_result(pa_result: str, runners: list):
         elif pa == 'pop out':
             print("파울 플라이 아웃")
         out = 1
-        return out, runners, 0
+        return out, runners, 0, hit_streak
 
     # 2) 출루/안타
     elif 'single' in pa:
         print("안타")
+        hit_streak += 1
         runners = [1] + [r+1 for r in runners]
     elif 'double' in pa:
         print("2루타")
+        hit_streak += 1
         runners = [2] + [r+2 for r in runners]
     elif 'triple' in pa:
         print("3루타")
+        hit_streak += 1
         runners = [3] + [r+3 for r in runners]
     elif 'home run' in pa or 'homer' in pa:
         print("홈런")
+        hit_streak += 1
+        runs += len(runners) + 1
+        runners = []
+    elif pa == '홈런':
+        print("홈런")
+        hit_streak += 1
+        runs += len(runners) + 1
+        runners = []
+    elif pa == "홈 런":
+        print("홈런")
+        hit_streak += 1
+        runs += len(runners) + 1
+        runners = []
+    elif pa == "홈런 ":
+        print("홈런")
+        hit_streak += 1
         runs += len(runners) + 1
         runners = []
     elif 'base on balls' in pa or 'walk' in pa:
         print("볼넷")
+        hit_streak += 1
         runners = [1] + [r+1 for r in runners]
     
     
     else:
-        a = random.randint(0, 1)  
+        a = 0 
         if a == 0:
             print("삼진 아웃")
             out=1
-            return out, runners, 0
-        else:
-            print("안타")
-            runners = [1] + [r+1 for r in runners]
+            return out, runners, 0, hit_streak
 
     # 3) 베이스 초과 주자 득점 처리
     new_runners = []
@@ -77,7 +94,7 @@ def process_pa_result(pa_result: str, runners: list):
             runs += 1
         else:
             new_runners.append(r)
-    return 0, new_runners, runs
+    return 0, new_runners, runs, hit_streak
 
 
 
@@ -113,7 +130,9 @@ def play_season(team_name, our_lineup, our_bench, our_starting, our_bullpen):
             score = {'home':0, 'away':0}
             our_idx, opp_idx = 0, 0
             chance_count = 0
+            sc = 0
             max_chance   = random.randint(4,6)
+            hit_streak = 0
 
             # 1~9회 PA 루프
             while inning <= 9:
@@ -170,13 +189,13 @@ def play_season(team_name, our_lineup, our_bench, our_starting, our_bullpen):
                     'our_attack': our_attack   
                 }
 
-                pa_result = ask_pa_result(context)
+                pa_result,hit_streak = ask_pa_result(context, sc, hit_streak)
                 
                 side_label = '초' if half == 'top' else '말'
                 print(f"  ▶ {inning}회{side_label} {atk_idx+1}번타자 {atk_lineup[atk_idx]} 투수: {def_pitcher}")
 
                 # PA 결과 처리
-                outs_inc, runners, runs = process_pa_result(pa_result, runners)
+                outs_inc, runners, runs, hit_streak = process_pa_result(pa_result, runners, hit_streak)
                 if runs == 100:
                     print("찬스 상황 입니다")
                     loc_score = {away: score['away'], home: score['home']}
@@ -204,12 +223,16 @@ def play_season(team_name, our_lineup, our_bench, our_starting, our_bullpen):
                     }
                     chance_count = chance_count + 1
                     pa_result = chance_result(context)
-                    outs_inc, runners, runs = process_pa_result(pa_result, runners)
+                    outs_inc, runners, runs, hit_streak = process_pa_result(pa_result, runners, hit_streak)
                     
                 outs += outs_inc
+                
+                if hit_streak>3:
+                    hit_streak = 0
                 if runs > 0:
                     score_key = 'away' if atk_team == away else 'home'
                     score[score_key] += runs
+                    sc = sc + runs
                     
                 loc_score = {away: score['away'], home: score['home']}
                 print(f"  아웃: {outs} 주자: {runners} 득점: {loc_score}")
@@ -231,6 +254,7 @@ def play_season(team_name, our_lineup, our_bench, our_starting, our_bullpen):
                 # 이닝 마무리
                 if outs >= 3:
                     outs, runners = 0, []
+                    sc = 0
                     half = 'bottom' if half == 'top' else 'top'
                     if half == 'top':
                         inning += 1
